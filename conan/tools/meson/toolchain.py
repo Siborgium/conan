@@ -271,6 +271,11 @@ class MesonToolchain:
         # Read configuration for compilers
         compilers_by_conf = self._conanfile_conf.get("tools.build:compiler_executables", default={},
                                                      check_type=dict)
+        # Read configuration for sanitize options
+        sanitize = self._conanfile_conf.get("tools.meson.mesontoolchain:sanitize", default=[],
+                                            check_type=list)
+        if len(sanitize):
+            self.project_options["b_sanitize"] = ",".join(sanitize)
         # Read the VirtualBuildEnv to update the variables
         build_env = self._conanfile.buildenv_build.vars(self._conanfile) if native else (
             VirtualBuildEnv(self._conanfile, auto_generate=True).vars())
