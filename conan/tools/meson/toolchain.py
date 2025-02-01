@@ -20,6 +20,7 @@ class MesonToolchain:
     """
     MesonToolchain generator
     """
+    minimum_version_version = (0, 55, 0)
     native_filename = "conan_meson_native.ini"
     cross_filename = "conan_meson_cross.ini"
 
@@ -137,6 +138,9 @@ class MesonToolchain:
     {% for context, values in cross_build.items() %}
     [{{context}}_machine]
     system = '{{values["system"]}}'
+    {% if "subsystem" in values %}
+    subsystem = '{{values["subsystem"]}}'
+    {% endif %}
     cpu_family = '{{values["cpu_family"]}}'
     cpu = '{{values["cpu"]}}'
     endian = '{{values["endian"]}}'
@@ -155,6 +159,7 @@ class MesonToolchain:
         raise_on_universal_arch(conanfile)
         self._conanfile = conanfile
         self._native = native
+        self._minimum_meson_version = self.minimum_meson_version
         self._is_apple_system = is_apple_os(self._conanfile)
         is_cross_building = cross_building(conanfile)  # x86_64->x86 is considered cross-building
         if not is_cross_building and native:
@@ -238,16 +243,19 @@ class MesonToolchain:
         if native is False and is_cross_building:
             os_host = conanfile.settings.get_safe("os")
             arch_host = conanfile.settings.get_safe("arch")
+            sdk_host = conanfile.settings.get_safe("os.sdk")
             os_build = conanfile.settings_build.get_safe('os')
             arch_build = conanfile.settings_build.get_safe('arch')
-            self.cross_build["build"] = to_meson_machine(os_build, arch_build)
-            self.cross_build["host"] = to_meson_machine(os_host, arch_host)
+            sdk_build = conanfile.settings.get_safe('os.sdk')
+            self.cross_build["build"] = to_meson_machine(os_build, arch_build, sdk_build)
+            self.cross_build["host"] = to_meson_machine(os_host, arch_host, sdk_host)
             self.properties["needs_exe_wrapper"] = True
             if hasattr(conanfile, 'settings_target') and conanfile.settings_target:
                 settings_target = conanfile.settings_target
                 os_target = settings_target.get_safe("os")
                 arch_target = settings_target.get_safe("arch")
-                self.cross_build["target"] = to_meson_machine(os_target, arch_target)
+                sdk_target = settings_target.get_safe("os.sdk")
+                self.cross_build["target"] = to_meson_machine(os_target, arch_target, sdk_target)
             if is_apple_os(self._conanfile):  # default cross-compiler in Apple is common
                 default_comp = "clang"
                 default_comp_cpp = "clang++"
@@ -484,7 +492,13 @@ class MesonToolchain:
                 subproject_options[subproject] = [{k: to_meson_value(v) for k, v in keypair.items()}
                                                   for keypair in listkeypair]
 
+        if (1, 2, 0) < self._minimum_meson_version:
+            # subsystem is not supported prior to 1.2.0
+            for context, properties in self.cross_build:
+                del properties['subsystem']
+
         return {
+            "minimum_meson_version": self._minimum_meson_version,
             # https://mesonbuild.com/Machine-files.html#properties
             "properties": {k: to_meson_value(v) for k, v in self.properties.items()},
             # https://mesonbuild.com/Machine-files.html#project-specific-options
@@ -552,6 +566,14 @@ class MesonToolchain:
         content = Template(self._meson_file_template, trim_blocks=True, lstrip_blocks=True,
                            undefined=StrictUndefined).render(context)
         return content
+
+    def set_minimum_meson_version(self, major, minor, patch):
+        version = (major, minor, patch)
+        if any(not instanceof(int) for p in version):
+            raise ConanException("You can only pass integers to"
+                                 "MesonToolchain.set_minimum_meson_version")
+        if version < 
+        self._minimum_meson_version = version
 
     def generate(self):
         """

@@ -21,6 +21,25 @@ _meson_system_map = {
     'WindowsStore': 'windows',
 }
 
+# https://mesonbuild.com/Reference-tables.html#subsystem-names-since-120
+_meson_subsystem_map = {
+    # We don't have -simulator
+    'Macos': 'macos',
+    'iOS': 'ios',
+    'watchOS': 'watchos',
+    'tvOS': 'tvos',
+}
+
+# see logic in to_meson_machine
+_meson_sdk_subsystem_map = {
+    'watchos': 'watchos',
+    'watchsimulator': 'watchos-simulator',
+    'iphoneos': 'ios',
+    'iphoneos-simulator': 'ios-simulator',
+    'appletvos': 'tvos',
+    'appletvsimulator': 'tvos-simulator',
+}
+
 # https://mesonbuild.com/Reference-tables.html#cpu-families
 _meson_cpu_family_map = {
     'armv4': ('arm', 'armv4', 'little'),
@@ -68,19 +87,29 @@ _cppstd_map = {
 }
 
 
-def to_meson_machine(machine_os, machine_arch):
+def to_meson_machine(machine_os, machine_arch, sdk):
     """Gets the OS system info as the Meson machine context.
 
     :param machine_os: ``str`` OS name.
     :param machine_arch: ``str`` OS arch.
+    :param machine_sdk: ``str`` SDK name, if 
     :return: ``dict`` Meson machine context.
     """
     system = _meson_system_map.get(machine_os, machine_os.lower())
+    subsystem = _meson_subsystem_map.get(machine_os)
+    if subsystem and sdk:
+        # Try to determine flavor by sdk (if specified)
+        subsystem = _meson_sdk_subsystem_map.get(machine_sdk, subsystem)
+    if not subsystem:
+        # Hope for the best
+        subsystem = machine_os.lower()
+
     default_cpu_tuple = (machine_arch.lower(), machine_arch.lower(), 'little')
     cpu_tuple = _meson_cpu_family_map.get(machine_arch, default_cpu_tuple)
     cpu_family, cpu, endian = cpu_tuple[0], cpu_tuple[1], cpu_tuple[2]
     context = {
         'system': system,
+        'subsystem': subsystem,
         'cpu_family': cpu_family,
         'cpu': cpu,
         'endian': endian,
