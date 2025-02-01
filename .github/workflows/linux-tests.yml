@@ -29,7 +29,7 @@ jobs:
       - name: Check if image exists
         id: check_image
         run: |
-          if docker manifest inspect ghcr.io/${{ github.repository_owner }}/conan-tests:${{ steps.dockerfile_hash.outputs.tag }} > /dev/null 2>&1; then
+          if docker manifest inspect ghcr.io/siborgium/conan-tests:${{ steps.dockerfile_hash.outputs.tag }} > /dev/null 2>&1; then
             echo "status=exists" >> $GITHUB_OUTPUT
           else
             echo "status=no-image" >> $GITHUB_OUTPUT
@@ -38,14 +38,14 @@ jobs:
       - name: Build and push image if not exists
         if: steps.check_image.outputs.status == 'no-image'
         run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/conan-tests:${{ steps.dockerfile_hash.outputs.tag }} -f ./.ci/docker/conan-tests .
-          docker push ghcr.io/${{ github.repository_owner }}/conan-tests:${{ steps.dockerfile_hash.outputs.tag }}
+          docker build -t ghcr.io/siborgium/conan-tests:${{ steps.dockerfile_hash.outputs.tag }} -f ./.ci/docker/conan-tests .
+          docker push ghcr.io/siborgium/conan-tests:${{ steps.dockerfile_hash.outputs.tag }}
 
   linux_tests:
     needs: build_container
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/conan-tests:${{ needs.build_container.outputs.image_tag }}
+      image: ghcr.io/siborgium/conan-tests:${{ needs.build_container.outputs.image_tag }}
       options: --user conan
     strategy:
       matrix:
