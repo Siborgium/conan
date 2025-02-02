@@ -92,14 +92,14 @@ def to_meson_machine(machine_os, machine_arch, sdk):
 
     :param machine_os: ``str`` OS name.
     :param machine_arch: ``str`` OS arch.
-    :param machine_sdk: ``str`` SDK name, if 
+    :param sdk: ``str`` SDK name, if any.
     :return: ``dict`` Meson machine context.
     """
     system = _meson_system_map.get(machine_os, machine_os.lower())
     subsystem = _meson_subsystem_map.get(machine_os)
     if subsystem and sdk:
         # Try to determine flavor by sdk (if specified)
-        subsystem = _meson_sdk_subsystem_map.get(machine_sdk, subsystem)
+        subsystem = _meson_sdk_subsystem_map.get(sdk, subsystem)
     if not subsystem:
         # Hope for the best
         subsystem = machine_os.lower()
