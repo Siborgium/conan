@@ -100,20 +100,18 @@ def to_meson_machine(machine_os, machine_arch, sdk):
     if subsystem and sdk:
         # Try to determine flavor by sdk (if specified)
         subsystem = _meson_sdk_subsystem_map.get(sdk, subsystem)
-    if not subsystem:
-        # Hope for the best
-        subsystem = machine_os.lower()
 
     default_cpu_tuple = (machine_arch.lower(), machine_arch.lower(), 'little')
     cpu_tuple = _meson_cpu_family_map.get(machine_arch, default_cpu_tuple)
     cpu_family, cpu, endian = cpu_tuple[0], cpu_tuple[1], cpu_tuple[2]
     context = {
         'system': system,
-        'subsystem': subsystem,
         'cpu_family': cpu_family,
         'cpu': cpu,
         'endian': endian,
     }
+    if subsystem:
+        context['subsystem'] = subsystem
     return context
 
 
