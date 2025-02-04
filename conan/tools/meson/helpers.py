@@ -24,20 +24,10 @@ _meson_system_map = {
 # https://mesonbuild.com/Reference-tables.html#subsystem-names-since-120
 _meson_subsystem_map = {
     # We don't have -simulator
-    'Macos': 'macos',
-    'iOS': 'ios',
-    'watchOS': 'watchos',
-    'tvOS': 'tvos',
-}
-
-# see logic in to_meson_machine
-_meson_sdk_subsystem_map = {
-    'watchos': 'watchos',
-    'watchsimulator': 'watchos-simulator',
-    'iphoneos': 'ios',
-    'iphoneos-simulator': 'ios-simulator',
-    'appletvos': 'tvos',
-    'appletvsimulator': 'tvos-simulator',
+    'Macos': {},
+    'iOS': { 'iphoneos': 'ios', 'iphoneos-simulator': 'ios-simualtor' },
+    'watchOS': { 'watchos': 'watchos', 'watchsimulator': 'watchos-simulator' },
+    'tvOS': { 'appletvos': 'tvos', 'appletvsimulator': 'tvos-simulator' },
 }
 
 # https://mesonbuild.com/Reference-tables.html#cpu-families
@@ -96,11 +86,7 @@ def to_meson_machine(machine_os, machine_arch, sdk):
     :return: ``dict`` Meson machine context.
     """
     system = _meson_system_map.get(machine_os, machine_os.lower())
-    subsystem = _meson_subsystem_map.get(machine_os)
-    if subsystem and sdk:
-        # Try to determine flavor by sdk (if specified)
-        subsystem = _meson_sdk_subsystem_map.get(sdk, subsystem)
-
+    subsystem = _meson_subsystem_map.get(machine_os, {}).get(sdk)
     default_cpu_tuple = (machine_arch.lower(), machine_arch.lower(), 'little')
     cpu_tuple = _meson_cpu_family_map.get(machine_arch, default_cpu_tuple)
     cpu_family, cpu, endian = cpu_tuple[0], cpu_tuple[1], cpu_tuple[2]
